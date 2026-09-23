@@ -1,0 +1,65 @@
+---
+title: "FluryA_Assignment5"
+format:
+    html:
+        output-file: "index.html"
+---
+
+```{r}
+#| echo: false
+#| warning: false
+library(dplyr)
+library(reactable)
+```
+
+```{r}
+### Problem 1
+ data <- read.csv("https://manctsui.github.io/datasets/timesData.csv")
+```
+
+:::{#fig-graphs layout-ncol=2}
+```{r}
+### Problem 2
+prof <- data |>
+    filter(grepl("University of Pennsylvania", data$university_name)
+           & year >= 2012 & year <= 2016)
+
+### Problem 3
+plot.ps <- plot(prof$year, as.numeric(prof$world_rank),
+main = "Penn State Year vs. School Rank", # Main title
+xlab = "Year", # X-axis label
+ylab = "Rank", # Y-axis label
+type="l" # Line graph
+)
+
+```
+
+```{r}
+### Problem 4
+ucb <- data |>
+    filter(grepl("University of California, Berkeley", data$university_name)
+           & year >= 2012 & year <= 2016)
+
+plot.usb <- plot(ucb$year, as.numeric(ucb$world_rank),
+main = "UC Berkeley Year vs. School Rank", # Main title
+xlab = "Year", # X-axis label
+ylab = "Rank", # Y-axis label
+type="l" # Line graph
+)
+
+```
+:::
+
+```{r}
+#| warning: false
+### Problem 5
+data |>
+    filter(country == "United States of America" & as.numeric(world_rank) <= 50) |>
+    count(year)
+
+```
+
+Did the number of US universities that rank in the top 50 change much through the years?
+
+The number of top 50 universities in the US does not seem to change from 2011 to 2015. But a dip is observed in 2016.
+
