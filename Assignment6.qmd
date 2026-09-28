@@ -1,0 +1,79 @@
+---
+title: "Assignment 6"
+format:
+    html:
+        output: "index.html"
+---
+
+```{r}
+#| echo: false
+#| warning: false
+library(dplyr)
+library(reactable)
+library(ggplot2)
+library(crosstalk)
+library(plotly)
+```
+
+
+```{r}
+uni <- read.csv("https://manctsui.github.io/datasets/timesData.csv")
+```
+
+
+```{r}
+#Problem 1A
+top_three <- uni |> 
+    distinct(university_name, .keep_all = TRUE) |>
+    count(country) |>
+    arrange(desc(n)) |>
+    head(3)
+
+reactable(top_three, columns = list(n = colDef(name = "number of distinct universities")))
+```
+```{r}
+#Problem 1B
+ggplot(top_three, aes(x = country, y = n)) + geom_col() + labs(y = "count")
+
+```
+
+
+```{r}
+#Problem 2A
+top_50_in_2011 <- uni |>
+    filter(year == "2011") |>
+    select(world_rank, university_name) |>
+    arrange(as.numeric(world_rank)) |>
+    head(50)
+
+reactable(top_50_in_2011, columns = list(world_rank = colDef(name = "rank"), university_name = colDef(name = "university name")))
+```
+
+### Problem 2B
+If we are to turn the data frame that results from Problem 1A as a SharedData object, would $rank column be a good candidate to use as a key?
+
+No, this is because rank is non-unique. Two or more universities can tie and thus
+have equal rank. So by using rank as a key, this could return multiple universities
+from a given rank.
+
+```{r}
+#Problem 2C
+top_50_in_2011 <- top_50_in_2011 |> mutate(world_rank = as.numeric(world_rank))
+sd <- SharedData$new(top_50_in_2011, key = ~rownames(top_50_in_2011))
+filter_slider("university_rank", "Rankings", sd, ~world_rank, 1, 50)
+reactable(sd)
+```
+
+```{r}
+#| warning: false
+# Problem 3
+uni_2016 <- uni |> filter(year == "2016")
+sd <- SharedData$new(uni_2016, key = ~university_name)
+
+scatter1 <- ggplotly(ggplot(sd) + aes(x = num_students, y = student_staff_ratio) + geom_point() + labs(title = "Number of Students vs Student-Staff Ratio", x = "Students", y = "Ratio"))
+
+scatter2 <- ggplotly(ggplot(sd) + aes(x = student_staff_ratio, y = teaching) + geom_point() + labs(title = "Student-Staff Ratio vs Teaching score", x = "Ratio", y = "Teaching Score"))
+
+bscols(scatter1, scatter2)
+
+```
