@@ -2,7 +2,7 @@
 title: "Assignment 6"
 format:
     html:
-        output: "index.html"
+        output-file: "index.html"
 ---
 
 ```{r}
@@ -50,11 +50,10 @@ reactable(top_50_in_2011, columns = list(world_rank = colDef(name = "rank"), uni
 ```
 
 ### Problem 2B
-If we are to turn the data frame that results from Problem 1A as a SharedData object, would $rank column be a good candidate to use as a key?
+If we are to turn the data frame that results from Problem 1A as a `SharedData` object, would `$rank` column be a good candidate to use as a key?
 
 No, this is because rank is non-unique. Two or more universities can tie and thus
-have equal rank. So by using rank as a key, this could return multiple universities
-from a given rank.
+have equal rank. So by using rank as a key, this could point to multiple universities at once.
 
 ```{r}
 #Problem 2C
