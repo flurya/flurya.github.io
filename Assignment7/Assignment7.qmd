@@ -1,0 +1,114 @@
+---
+title: "Assignment7"
+format:
+    html:
+        output-file: "index.html"
+---
+
+```{r}
+#| echo: false
+#| warning: false
+library(dplyr)
+library(ggplot2)
+library(reactable)
+```
+
+```{r}
+df <- data.frame(
+u1 = c(5, 1, 4, NA, NA, NA, 2, 1),
+u2 = c(5, NA, 3, 2, 5, NA, 2, 1),
+u3 = c(1, 4, 2, 5, 2, NA, 5, 4),
+u4 = c(4, 2, NA, 1, 5, 2, 3, 3)
+)
+```
+
+```{r}
+# Problem 1
+
+u2_6 <- mean(df$u2, na.rm = TRUE) + 1 * (df$u4[6] - mean(df$u4, na.rm = TRUE))
+u2_6
+
+```
+
+
+```{r}
+# Problem 2
+#
+#Use Pearson correlation to determine which movie is the most similar to Movie 1.
+#(Optional: Google how to use a for loop to speed up this task.)
+cor_mat <- cor(t(df), use = "pairwise.complete.obs", method = "pearson")
+movie1 <- cor_mat[-1,1]
+# removed the first movie, so need to add 1 to index
+movie_num <- which(movie1 == max(movie1, na.rm = TRUE)) + 1
+sprintf("Movie %d is most similar to Movie 1.", movie_num)
+```
+
+```{r}
+countries <- read.csv("https://manctsui.github.io/datasets/countries.csv")
+```
+
+```{r}
+# Problem 3A
+#Apply mean imputation grouped according to region to fill in missing values
+#in the column for "Agriculture" and the column for "Industry"
+#for the countries dataset
+
+countries |>
+  group_by(Region) |> 
+  mutate(Agriculture = ifelse(is.na(Agriculture), mean(Agriculture, na.rm = TRUE), Agriculture)) |>
+  mutate(Industry = ifelse(is.na(Industry), mean(Industry, na.rm = TRUE), Industry)) |>
+  ungroup() |>
+  reactable()
+
+# Problem 3B
+#How many NA's did you have to fill from each region?
+countries |>
+  filter(is.na(Agriculture) == TRUE) |> 
+  group_by(Region) |>
+  count(is.na(Agriculture)) |>
+  ungroup()
+countries |>
+  filter(is.na(Industry) == TRUE) |> 
+  group_by(Region) |>
+  count(is.na(Industry)) |>
+  ungroup()
+```
+
+
+```{r}
+#Problem 4
+cricket <- data.frame(
+temp = c(79, 74, 73, 76, 82, 72, 71, 79, 83, 70, 73, 75, 77),
+chirps = c(44, 40, 38, 43, 48, 37, 34, 45, 51, 32, 35, 42, 43)
+)
+
+lm(temp ~ chirps, data = cricket)
+
+cor_tc <- cor(cricket$temp, cricket$chirps)
+mean_temp <- mean(cricket$temp)
+mean_chirps <- mean(cricket$chirps)
+sd_temp <- sd(cricket$temp)
+sd_chirps <- sd(cricket$chirps)
+```
+
+Apply the original lm to cricket
+```{r}
+cricket <- cricket |> mutate(equ =  0.714 * chirps + 46.474)
+```
+mean-center then standardize temp and chirps
+```{r}
+cricket_std <- cricket |>
+  mutate(temp = (temp - mean_temp) / sd_temp) |>
+  mutate(chirps = (chirps - mean_chirps) / sd_chirps)
+```
+Then calculate temperature from the correlation between temperature and chirps multiplied by the standardized chirps, then un-apply this standardization for temp.
+```{r}
+cricket_std <- cricket_std |>
+  mutate(equ_std = (cor_tc * chirps) * sd_temp + mean_temp)
+```
+
+```{r}
+cricket_std
+```
+Notice the similarity between equ and std_equ.
+Thus doing this is equivalent to using lm.
