@@ -1,0 +1,135 @@
+---
+title: "The Hangover Effects of COVID-19 for New York City"
+format:
+    html:
+        output-file: "index.html"
+---
+
+```{r}
+#| echo: false
+#| warning: false
+library(dplyr)
+library(reactable)
+library(ggplot2)
+library(crosstalk)
+```
+
+On January 31st, 2020, The Untied States declared a public health emergency 
+for the corona virus: COVID-19. During which over 1.2 million Americans died.
+The pandemic officially ended on May 11th, 2023. However, for New York City 
+the impacts of COVID-19 did not end at the same time. The effects that
+COVID-19 has had on the city can be seen in the numbers of residents on SNAP,
+cash assistance, and Medicaid.
+
+New York City is split into 5 boroughs, with each further split into many
+community districts. The dataset gave the number of residents on each of
+SNAP, cash assistance, and Medicaid. This information was updated each
+quarter on the first day of the month for March, June, September, and December.
+
+To analyze this data I grouped the entries by borough then averaged over the
+community districts.
+
+```{r}
+#| echo: false
+# Link to the dataset
+# https://data.cityofnewyork.us/Social-Services/Cash-Assistance-Medicaid-and-SNAP-Borough-Communit/5awp-wfkt/about_data
+file <- "Cash_Assistance,_Medicaid,_and_SNAP_-_Borough_Community_District_Report_20261103.csv"
+data <- read.csv(file, stringsAsFactors = FALSE);
+
+# Convert number string into number. e.g. "1,234" into 1234
+numericCols <- 4:9
+data[,numericCols] <- lapply(data[,numericCols],function(x){as.numeric(gsub(",", "", x))})
+# Merge names "Staten_Island" and "Staten Island"
+data <- data |> mutate(Borough = if_else(Borough == "Staten_Island", "Staten Island", Borough))
+# Convert date string to date object for graphing
+data <- data |> mutate(Month = as.POSIXct(Month, format="%m/%d/%Y"))
+
+# Important dates to graph later
+COVID_start <- as.POSIXct("1/31/2020", format="%m/%d/%Y")
+COVID_end <- as.POSIXct("5/11/2023", format="%m/%d/%Y")
+```
+
+```{r}
+snap <- data |>
+    summarize(mean_SNAP = mean(Borough.Consultation.Total.SNAP.Recipients), .by = c(Borough, Month))
+
+p <- ggplot(snap) +
+    aes(x = Month, y = mean_SNAP, color = Borough) + 
+    geom_point()
+
+p <- p + labs(title = "Avg. number of Residents on SNAP by Borough", x = "Quarter", y = "")
+
+top <- 40000
+bottom <- 15000
+text_height <- 37500
+
+p <- p + annotate("segment", x = COVID_start, y = bottom, xend = COVID_start, yend = top, color = "red", lty = "dotted")
+p <- p + annotate("segment", x = COVID_end, y = bottom, xend = COVID_end, yend = top, color = "green", lty = "dotted")
+p <- p + annotate("text", x=COVID_start, y=text_height, label="COVID-19 begins", hjust=-0.1, color="red",family="sans")
+p <- p + annotate("text", x=COVID_end, y=text_height, label="COVID-19 ends", hjust=-0.1, color="green",family="sans")
+
+p  
+```
+
+Here we see the average number of residents on SNAP assistance grouped by borough.
+By visual inspection we see for the Bronx, Brooklyn, and Manhattan the number of residents on
+SNAP has only recently, since 2026, dipped below pre-COVID levels. For the Queens
+and Staten Island, they have yet to fully recover.
+
+```{r}
+medicaid <- data |>
+    summarize(mean_MAID = mean(Borough.Consultation.Total.Medicaid.Enrollees), .by = c(Borough, Month))
+
+top <- 40000
+bottom <- 15000
+text_height <- 37500
+
+p <- ggplot(medicaid) +
+    aes(x = Month, y = mean_MAID, color = Borough) + 
+    geom_point() +
+    ylim(bottom, top)
+
+p <- p + labs(title = "Avg. number of Residents on Medicaid by Borough", x = "Quarter", y = "")
+
+p <- p + annotate("segment", x = COVID_start, y = bottom, xend = COVID_start, yend = top, color = "red", lty = "dotted")
+p <- p + annotate("segment", x = COVID_end, y = bottom, xend = COVID_end, yend = top, color = "green", lty = "dotted")
+p <- p + annotate("text", x=COVID_start, y=text_height, label="COVID-19 begins", hjust=-0.1, color="red",family="sans")
+p <- p + annotate("text", x=COVID_end, y=text_height, label="COVID-19 ends", hjust=-0.1, color="green",family="sans")
+
+p  
+```
+The Medicaid numbers tell a difference story. The numbers for all boroughs kept
+constant and actually increased after the official end of COVID. This could be
+because of the success that COVID-era stimulus had on keeping people financially
+afloat so as to not be eligible for Medicaid. But after COVID this stimulus ended. So 
+those who did not completely recover may have fell into poverty and thus being 
+eligible for Medicaid.
+
+```{r}
+cash <- data |>
+    summarize(mean_cash = mean(Borough.Consultation.Total.Cash.Assistance.Recipients), .by = c(Borough, Month))
+
+p <- ggplot(cash) +
+    aes(x = Month, y = mean_cash, color = Borough) + 
+    geom_point()
+
+p <- p + labs(title = "Avg. number of Residents on Cash Assistance by Borough", x = "Quarter", y = "")
+
+top <- 20000
+bottom <- 2500
+text_height <- 18000
+
+p <- p + annotate("segment", x = COVID_start, y = bottom, xend = COVID_start, yend = top, color = "red", lty = "dotted")
+p <- p + annotate("segment", x = COVID_end, y = bottom, xend = COVID_end, yend = top, color = "green", lty = "dotted")
+p <- p + annotate("text", x=COVID_start, y=text_height, label="COVID-19 begins", hjust=-0.1, color="red",family="sans")
+p <- p + annotate("text", x=COVID_end, y=text_height, label="COVID-19 ends", hjust=-0.1, color="green",family="sans")
+
+p  
+```
+There was an increasing number of residences on cash assistance from the end of
+2021 to mid 2025. The Bronx saw the largest increase with the other four following
+a similar, but less intense, pattern. This is most likely due to the long-term
+disruptions COVID had on the economy.
+
+In conclusion, while COVID-19 officially ended over three years ago. The city of New
+York is still addressing the needs of those affected by COVID to this day.
